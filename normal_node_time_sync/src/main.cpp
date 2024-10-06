@@ -12,7 +12,7 @@
 const int csPin = 15;                                                           // LoRa radio chip select
 const int resetPin = 27;                                                        // LoRa radio reset
 const int irqPin = 4;                                                           // must be a hardware interrupt pin
-const int ledPin = 2;                                                           // LED pin for beacon rreception confimation
+const int ledPin = 2;                                                           // LED pin for beacon reception confimation
 
 SPIClass *hspi = NULL;
 
@@ -28,19 +28,6 @@ unsigned long slotTime = -1;                                                    
 bool beaconReceived = false;                                                    // flag for beacon reception
 bool messageSent = false;                                                       // flag for message sending
 String message = "";                                                            // empty message variable
-
-
-// void onCadDone(boolean signalDetected) {
-//   // detect preamble
-//   if (signalDetected) {
-//     //Serial.println("Signal detected");
-//     // put the radio into continuous receive mode
-//     // LoRa.receive();
-//   //} else {
-//     // try next activity dectection
-//     LoRa.channelActivityDetection();
-//   }
-// }
 
 // function: extract data from beacon
 // parameters:
@@ -80,9 +67,6 @@ void sendMessage() {
     String(randomData, 2) + ", " + String(messageIncrement);
   }
 
-  // LoRa.onCadDone(onCadDone);
-  // LoRa.channelActivityDetection();
-
   LoRa.beginPacket();                                                           // send message
   LoRa.print(message);
   LoRa.endPacket();
@@ -117,11 +101,11 @@ void onReceive(int packetSize) {
         totalSlots -= 1;                                                        // decrement no. of layers left in an epoch
         sendBeacon(beaconSlots, totalSlots);                                    // send new beacon
         messageSent = false;                                                    // change flag, listen for messages in next slots
-      //   esp_sleep_enable_timer_wakeup(beaconSlots 
-      //                                 * slotTime * 1000);                       // put to sleep for remaining N_B slots
-      //   Serial.println("Entering Sleep Mode");
-      //   esp_light_sleep_start();                                                // enter light sleep mode
-      //   Serial.println("Exiting Sleep Mode");
+        esp_sleep_enable_timer_wakeup(beaconSlots 
+                                      * slotTime * 1000);                       // put to sleep for remaining N_B slots
+        Serial.println("Entering Sleep Mode");
+        esp_light_sleep_start();                                                // enter light sleep mode
+        Serial.println("Exiting Sleep Mode");
       }
       else if (beaconSlots == 1) {                                              // if you're in the last layer
         sendMessage();                                                          // send message
@@ -131,11 +115,11 @@ void onReceive(int packetSize) {
     else if (receivedData.substring(0, 1) != "L" && !messageSent) {             // if received a message and message wasn't send earlier
       message = receivedData;                                                   
       sendMessage();                                                            // send message
-      // esp_sleep_enable_timer_wakeup((totalSlots - beaconSlots)                  // put to sleet for remaining N_D slots
-      // * slotTime * 1000); 
-      // Serial.println("Entering Sleep Mode");
-      // esp_light_sleep_start();                                                  // enter light sleep mode
-      // Serial.println("Exiting Sleep Mode");
+      esp_sleep_enable_timer_wakeup((totalSlots - beaconSlots)                  // put to sleet for remaining N_D slots
+      * slotTime * 1000); 
+      Serial.println("Entering Sleep Mode");
+      esp_light_sleep_start();                                                  // enter light sleep mode
+      Serial.println("Exiting Sleep Mode");
     }
     else {                                                                      // if you wait for message, but receive beacon
       Serial.println("Received another beacon, discarding...");
@@ -172,7 +156,6 @@ void setup() {
 }
 
 void loop() {
-  //LoRa.onCadDone(onCadDone);
   if (beaconReceived) {                                                         // change LED state, according to beaconReceived flag
     digitalWrite(ledPin, HIGH);
   }
